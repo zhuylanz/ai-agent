@@ -2,12 +2,11 @@
 
 /**
  * PostgreSQL Memory Demo
- * 
+ *
  * This script demonstrates how to use the AI Agent with PostgreSQL memory.
  * Make sure you have PostgreSQL running and the proper environment variables set.
  */
 
-import { ChatOpenAI } from '@langchain/openai';
 import { AIAgent, PostgresConfig } from '../src';
 
 async function demonstratePostgresMemory() {
@@ -24,18 +23,17 @@ async function demonstratePostgresMemory() {
     tableName: 'demo_chat_messages',
   };
 
-  // Create OpenAI model
-  const model = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-    temperature: 0.7,
-  });
-
   console.log('📝 Creating AI Agent with PostgreSQL memory...');
-  
-  // Create AI Agent with PostgreSQL memory
+
+  // Create AI Agent with PostgreSQL memory using the new constructor pattern
   const agent = new AIAgent({
-    model,
-    systemMessage: 'You are a helpful assistant with persistent memory powered by PostgreSQL.',
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
+    systemMessage:
+      'You are a helpful assistant with persistent memory powered by PostgreSQL.',
     memory: {
       type: 'postgres',
       sessionId: 'demo-session-' + Date.now(),
@@ -44,7 +42,9 @@ async function demonstratePostgresMemory() {
     },
   });
 
-  console.log('✅ Agent created! Memory will be automatically set up on first use.\n');
+  console.log(
+    '✅ Agent created! Memory will be automatically set up on first use.\n',
+  );
 
   // Simulate a conversation
   const conversations = [
@@ -71,18 +71,27 @@ async function demonstratePostgresMemory() {
   try {
     console.log('📚 Retrieving conversation history from PostgreSQL...');
     const history = await agent.getConversationHistory();
-    
+
     console.log(`Found ${history.length} messages in history:`);
     history.forEach((msg, index) => {
       const type = msg._getType();
-      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-      console.log(`  ${index + 1}. [${type.toUpperCase()}] ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
+      const content =
+        typeof msg.content === 'string'
+          ? msg.content
+          : JSON.stringify(msg.content);
+      console.log(
+        `  ${index + 1}. [${type.toUpperCase()}] ${content.substring(0, 100)}${
+          content.length > 100 ? '...' : ''
+        }`,
+      );
     });
   } catch (error) {
     console.error('❌ Error retrieving history:', error);
   }
 
-  console.log('\n🎉 Demo completed! The conversation is now stored in PostgreSQL.');
+  console.log(
+    '\n🎉 Demo completed! The conversation is now stored in PostgreSQL.',
+  );
   console.log(`   Table: ${postgresConfig.tableName}`);
   console.log(`   Session: ${(agent as any).sessionId}`);
 }
@@ -90,7 +99,7 @@ async function demonstratePostgresMemory() {
 // Handle CLI execution
 if (require.main === module) {
   console.log('Starting PostgreSQL Memory Demo...\n');
-  
+
   // Check environment
   if (!process.env.OPENAI_API_KEY) {
     console.error('❌ Please set OPENAI_API_KEY environment variable');
@@ -106,9 +115,11 @@ if (require.main === module) {
       console.error('\n❌ Demo failed:', error);
       console.log('\n💡 Make sure:');
       console.log('  - PostgreSQL is running');
-      console.log('  - Database exists and credentials are correct');  
+      console.log('  - Database exists and credentials are correct');
       console.log('  - OPENAI_API_KEY is set');
-      console.log('  - Required packages are installed: npm install @langchain/openai pg @types/pg');
+      console.log(
+        '  - Required packages are installed: npm install pg @types/pg',
+      );
       process.exit(1);
     });
 }

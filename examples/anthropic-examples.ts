@@ -2,25 +2,21 @@
  * Example: Using the AI Agent with Anthropic Claude
  *
  * This example shows how to use the AI Agent library with Anthropic's Claude models.
- * You'll need to install @langchain/anthropic and set your Anthropic API key.
+ * You'll need to set your Anthropic API key as an environment variable.
  *
- * npm install @langchain/anthropic
  * export ANTHROPIC_API_KEY="your-api-key-here"
  */
 
 import { AIAgent } from '../src';
-import { ChatAnthropic } from '@langchain/anthropic';
 
 async function exampleWithClaude() {
-  // Create Anthropic model
-  const model = new ChatAnthropic({
-    model: 'claude-3-sonnet-20240229',
-    temperature: 0.7,
-  });
-
-  // Create AI Agent
+  // Create AI Agent with Anthropic model configuration
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'anthropic',
+      model: 'claude-3-sonnet-20240229',
+      temperature: 0.7,
+    },
     systemMessage: 'You are Claude, a helpful AI assistant created by Anthropic.',
     maxIterations: 8,
     returnIntermediateSteps: true, // Get detailed steps
@@ -67,13 +63,18 @@ async function exampleWithClaude() {
 }
 
 async function exampleWithSummaryMemory() {
-  const model = new ChatAnthropic({
-    model: 'claude-3-haiku-20240307', // Faster model for summarization
-  });
-
-  // Create agent with summary memory (good for long conversations)
-  const agent = AIAgent.createWithMemory(model, 'user-456', {
-    type: 'summary',
+  // Create agent with summary memory using the new constructor pattern
+  const agent = new AIAgent({
+    model: {
+      provider: 'anthropic',
+      model: 'claude-3-haiku-20240307', // Faster model for summarization
+      temperature: 0.7,
+    },
+    memory: {
+      type: 'summary',
+      sessionId: 'user-456',
+    },
+    systemMessage: 'You are Claude, helping with a web development project.',
   });
 
   try {
@@ -92,6 +93,30 @@ async function exampleWithSummaryMemory() {
       const response = await agent.invoke(message);
       console.log('Assistant:', response.output);
     }
+
+    // Show conversation history
+    const history = await agent.getConversationHistory();
+    console.log('\nConversation history length:', history.length);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+async function exampleWithCustomAPIKey() {
+  // Example showing how to provide API key directly in model config
+  const agent = new AIAgent({
+    model: {
+      provider: 'anthropic',
+      model: 'claude-3-haiku-20240307',
+      temperature: 0.5,
+      apiKey: 'your-anthropic-api-key-here', // You can provide API key directly
+    },
+    systemMessage: 'You are Claude, a helpful assistant.',
+  });
+
+  try {
+    const response = await agent.invoke('Hello! Can you tell me about yourself?');
+    console.log('Response:', response.output);
   } catch (error) {
     console.error('Error:', error);
   }
@@ -101,6 +126,7 @@ async function exampleWithSummaryMemory() {
 export {
   exampleWithClaude,
   exampleWithSummaryMemory,
+  exampleWithCustomAPIKey,
 };
 
 // Run examples if this file is executed directly
@@ -111,4 +137,5 @@ if (require.main === module) {
   // Uncomment to run specific examples:
   // exampleWithClaude();
   // exampleWithSummaryMemory();
+  // exampleWithCustomAPIKey();
 }

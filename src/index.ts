@@ -2,12 +2,9 @@ import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { BaseMessage } from '@langchain/core/messages';
 import type { BaseMessagePromptTemplateLike } from '@langchain/core/prompts';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
 import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
 import type { BaseChatMemory } from 'langchain/memory';
-import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools';
 import type { Tool } from '@langchain/core/tools';
-import { z } from 'zod';
 import { omit } from 'lodash';
 
 import type {
@@ -18,6 +15,7 @@ import type {
 } from './types/index';
 import { ToolManager } from './tools/index';
 import { MemoryManager } from './memory/memory-manager';
+import { ModelFactory } from './models/model-factory';
 
 export class AIAgent {
   private model: BaseChatModel;
@@ -30,20 +28,17 @@ export class AIAgent {
   private sessionId: string = Math.random().toString(36).substring(7); // Default sessionId
   private pendingMemoryConfig?: MemoryConfig;
   private memorySetupPromise?: Promise<void>;
+  private modelInitPromise: Promise<void>;
 
   constructor(options: AIAgentOptions) {
-    this.model = options.model;
+    this.model = null as any;
     this.systemMessage = options.systemMessage || 'You are a helpful assistant';
     this.maxIterations = options.maxIterations || 10;
     this.returnIntermediateSteps = options.returnIntermediateSteps || false;
     this.passthroughBinaryImages = options.passthroughBinaryImages || false;
     this.toolManager = new ToolManager();
 
-    if (!this.model.bindTools) {
-      throw new Error(
-        'AI Agent requires a Chat Model which supports Tools calling',
-      );
-    }
+    this.modelInitPromise = this.initializeModel(options.model);
 
     if (options.tools) {
       if (Array.isArray(options.tools)) {
@@ -60,6 +55,36 @@ export class AIAgent {
       this.pendingMemoryConfig = options.memory;
       this.memorySetupPromise = this.setupMemory(options.memory);
     }
+  }
+
+  /**
+   * Initialize the model asynchronously
+   */
+  private async initializeModel(
+    modelConfig: AIAgentOptions['model'],
+  ): Promise<void> {
+    try {
+      this.model = await ModelFactory.createModel(modelConfig);
+
+      if (!this.model.bindTools) {
+        throw new Error(
+          'AI Agent requires a Chat Model which supports Tools calling',
+        );
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to initialize model: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * Ensure model is initialized before operations
+   */
+  private async ensureModelReady(): Promise<void> {
+    await this.modelInitPromise;
   }
 
   /**
@@ -153,12 +178,10 @@ export class AIAgent {
   private prepareMessages(): BaseMessagePromptTemplateLike[] {
     const messages: BaseMessagePromptTemplateLike[] = [];
 
-    // Add system message if provided
     if (this.systemMessage) {
       messages.push(['system', this.systemMessage]);
     }
 
-    // Add chat history placeholder and human input
     messages.push(
       ['placeholder', '{chat_history}'],
       ['human', '{input}'],
@@ -182,14 +205,12 @@ export class AIAgent {
    */
   async invoke(input: string): Promise<AIAgentResponse> {
     try {
-      // Ensure memory is ready before execution
+      await this.ensureModelReady();
       await this.ensureMemoryReady();
 
-      // Prepare the prompt messages and template
       const messages = this.prepareMessages();
       const prompt = this.preparePrompt(messages);
 
-      // Get available tools
       const tools = this.toolManager.getTools();
 
       // Create the base agent that calls tools
@@ -248,6 +269,9 @@ export class AIAgent {
     input: string,
     onToken?: (token: string) => void,
   ): Promise<AIAgentResponse> {
+    // Ensure model is ready before streaming
+    await this.ensureModelReady();
+
     // For now, just call invoke - streaming can be added later if the model supports it
     // This is a placeholder for future streaming functionality
     return this.invoke(input);
@@ -281,3 +305,4 @@ export class AIAgent {
 export * from './types/index';
 export { MemoryManager } from './memory/index';
 export { ToolManager } from './tools/index';
+export { ModelFactory } from './models/model-factory';

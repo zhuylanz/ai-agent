@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { AIAgent } from '../src';
+import { AIAgent, ModelFactory } from '../src';
 import { MemoryManager } from '../src/memory';
 import type { PostgresConfig } from '../src/types';
 
@@ -24,6 +24,13 @@ jest.mock('@langchain/community/stores/message/postgres', () => ({
   PostgresChatMessageHistory: jest.fn(() => mockPostgresChatMessageHistory),
 }));
 
+// Mock ModelFactory
+jest.mock('../src/models/model-factory', () => ({
+  ModelFactory: {
+    createModel: jest.fn(),
+  },
+}));
+
 // Mock ChatModel for testing
 class MockChatModel {
   public bindTools = jest.fn();
@@ -42,6 +49,7 @@ class MockChatModel {
 
 describe('PostgreSQL Memory Integration', () => {
   let mockModel: any;
+  let mockModelFactory: jest.Mocked<typeof ModelFactory>;
   const mockPostgresConfig: PostgresConfig = {
     host: 'localhost',
     port: 5432,
@@ -53,6 +61,11 @@ describe('PostgreSQL Memory Integration', () => {
 
   beforeEach(() => {
     mockModel = new MockChatModel();
+    
+    // Mock ModelFactory.createModel to return our mock model
+    mockModelFactory = ModelFactory as jest.Mocked<typeof ModelFactory>;
+    mockModelFactory.createModel.mockResolvedValue(mockModel);
+    
     jest.clearAllMocks();
   });
 
@@ -146,7 +159,10 @@ describe('PostgreSQL Memory Integration', () => {
   describe('AIAgent with PostgreSQL memory', () => {
     test('should create agent with postgres memory configuration', async () => {
       const agent = new AIAgent({
-        model: mockModel,
+        model: {
+          provider: 'openai',
+          model: 'gpt-3.5-turbo',
+        },
         memory: {
           type: 'postgres',
           sessionId: 'test-session',
@@ -155,11 +171,17 @@ describe('PostgreSQL Memory Integration', () => {
       });
 
       expect(agent).toBeInstanceOf(AIAgent);
+      
+      // Wait for model initialization
+      await (agent as any).ensureModelReady();
     });
 
     test('should setup postgres memory and respond to messages', async () => {
       const agent = new AIAgent({
-        model: mockModel,
+        model: {
+          provider: 'openai',
+          model: 'gpt-3.5-turbo',
+        },
         memory: {
           type: 'postgres',
           sessionId: 'test-session',
@@ -168,7 +190,8 @@ describe('PostgreSQL Memory Integration', () => {
         },
       });
 
-      // Wait for memory setup
+      // Wait for memory setup and model initialization
+      await (agent as any).ensureModelReady();
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // The agent should work normally
@@ -177,7 +200,10 @@ describe('PostgreSQL Memory Integration', () => {
 
     test('should handle auto-generated session ID with postgres memory', async () => {
       const agent = new AIAgent({
-        model: mockModel,
+        model: {
+          provider: 'openai',
+          model: 'gpt-3.5-turbo',
+        },
         memory: {
           type: 'postgres',
           // No sessionId provided - should be auto-generated
@@ -186,6 +212,10 @@ describe('PostgreSQL Memory Integration', () => {
       });
 
       expect(agent).toBeInstanceOf(AIAgent);
+      
+      // Wait for model initialization
+      await (agent as any).ensureModelReady();
+      
       // Session ID should be auto-generated
       const sessionId = (agent as any).sessionId;
       expect(sessionId).toBeDefined();

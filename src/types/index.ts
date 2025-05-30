@@ -1,9 +1,6 @@
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import type { BaseChatMemory } from 'langchain/memory';
-
 export interface AIAgentOptions {
   /** The chat model to use for the agent */
-  model: BaseChatModel;
+  model: ModelConfig;
 
   /** System message to provide context to the agent */
   systemMessage?: string;
@@ -22,6 +19,14 @@ export interface AIAgentOptions {
 
   /** Array of tools available to the agent */
   tools?: ToolOptions[];
+}
+
+export interface ModelConfig {
+  provider: 'openai' | 'anthropic';
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+  apiKey?: string;
 }
 
 export interface MemoryConfig {

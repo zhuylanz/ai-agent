@@ -4,12 +4,13 @@ A standalone AI Agent library. This library allows you to create powerful AI age
 
 ## Features
 
-- 🤖 **AI Agent Creation**: Create AI agents with any LangChain-compatible chat model
+- 🤖 **AI Agent Creation**: Create AI agents with automatic model initialization from configuration
 - 🧠 **Memory Management**: Built-in support for conversation memory with different types (buffer, buffer-window, summary, mysql)
 - 🛠️ **Tool Integration**: Easy tool addition and management for function calling
 - ⚙️ **Flexible Configuration**: Configurable system messages, max iterations, and more
 - 🔄 **Session Management**: Multi-session support with isolated memory
 - 📝 **TypeScript Support**: Full TypeScript support with comprehensive type definitions
+- 🔧 **Auto Model Initialization**: Automatically initialize models from provider and model configuration
 
 ## Installation
 
@@ -19,7 +20,7 @@ npm install @zhuylanz/ai-agent
 
 ## Prerequisites
 
-You'll need to install the LangChain model providers you want to use:
+The library will automatically handle model dependencies, but you need to install the LangChain model providers you want to use:
 
 ```bash
 # For OpenAI
@@ -36,16 +37,14 @@ npm install @langchain/anthropic
 ### Simple AI Agent
 
 ```typescript
-import { ChatOpenAI } from '@langchain/openai';
 import { AIAgent } from '@zhuylanz/ai-agent';
 
-const model = new ChatOpenAI({
-  temperature: 0.7,
-  model: 'gpt-4o-mini',
-});
-
 const agent = new AIAgent({
-  model,
+  model: {
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+  },
   systemMessage: 'You are a helpful assistant.',
 });
 
@@ -56,16 +55,14 @@ console.log(response.output); // "The capital of France is Paris."
 ### AI Agent with Memory
 
 ```typescript
-import { ChatOpenAI } from '@langchain/openai';
 import { AIAgent } from '@zhuylanz/ai-agent';
 
-const model = new ChatOpenAI({
-  temperature: 0.7,
-  model: 'gpt-4o-mini',
-});
-
 const agent = new AIAgent({
-  model,
+  model: {
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+  },
   memory: {
     type: 'buffer-window',
     contextWindowLength: 5, // Keep last 5 message pairs
@@ -81,16 +78,14 @@ console.log(response.output); // "Your name is John."
 ### AI Agent with Tools
 
 ```typescript
-import { ChatOpenAI } from '@langchain/openai';
 import { AIAgent } from '@zhuylanz/ai-agent';
 
-const model = new ChatOpenAI({
-  temperature: 0.7,
-  model: 'gpt-4o-mini',
-});
-
 const agent = new AIAgent({
-  model,
+  model: {
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+  },
   systemMessage: 'You are a helpful assistant with calculation abilities.',
   maxIterations: 5,
 });
@@ -109,6 +104,25 @@ const response = await agent.invoke('What is 15 + 27?');
 console.log(response.output);
 ```
 
+### Anthropic Example
+
+```typescript
+import { AIAgent } from '@zhuylanz/ai-agent';
+
+const agent = new AIAgent({
+  model: {
+    provider: 'anthropic',
+    model: 'claude-3-sonnet-20240229',
+    temperature: 0.5,
+    maxTokens: 1000,
+  },
+  systemMessage: 'You are a helpful assistant.',
+});
+
+const response = await agent.invoke('Explain quantum computing in simple terms');
+console.log(response.output);
+```
+
 ## API Reference
 
 ### AIAgent Class
@@ -117,13 +131,21 @@ console.log(response.output);
 
 ```typescript
 interface AIAgentOptions {
-  model: BaseChatModel;              // Required: LangChain chat model
+  model: ModelConfig;                // Required: Model configuration
   systemMessage?: string;            // System message for the agent
   maxIterations?: number;            // Maximum iterations (default: 10)
   returnIntermediateSteps?: boolean; // Return intermediate steps (default: false)
   passthroughBinaryImages?: boolean; // Pass binary images (default: false)
   memory?: MemoryConfig;             // Memory configuration
   tools?: Tool[];                    // Initial tools array
+}
+
+interface ModelConfig {
+  provider: 'openai' | 'anthropic';  // Model provider
+  model: string;                     // Model name
+  temperature?: number;              // Temperature setting
+  maxTokens?: number;               // Maximum tokens
+  apiKey?: string;                  // API key (optional, uses env vars)
 }
 
 interface MemoryConfig {
@@ -181,9 +203,27 @@ Clear the agent's memory.
 ##### `getConversationHistory(): Promise<BaseMessage[]>`
 Get the conversation history from memory.
 
-#### Static Methods
+#### Supported Models
 
-The AIAgent class only supports constructor-based instantiation. There are no static factory methods.
+The library supports automatic initialization for:
+
+- **OpenAI**: GPT-3.5-turbo, GPT-4, GPT-4-turbo, GPT-4o, GPT-4o-mini
+- **Anthropic**: Claude-3 Opus, Claude-3 Sonnet, Claude-3 Haiku
+
+### Model Factory
+
+The ModelFactory class handles automatic model initialization:
+
+```typescript
+import { ModelFactory } from '@zhuylanz/ai-agent';
+
+// Create a model directly
+const model = await ModelFactory.createModel({
+  provider: 'openai',
+  model: 'gpt-4o-mini',
+  temperature: 0.7,
+});
+```
 
 ### Memory Management
 
@@ -409,16 +449,24 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 
 ```typescript
 // OpenAI with custom settings
-const openaiModel = new ChatOpenAI({
-  temperature: 0.7,
-  model: 'gpt-4',
-  maxTokens: 1000,
+const agent = new AIAgent({
+  model: {
+    provider: 'openai',
+    model: 'gpt-4',
+    temperature: 0.7,
+    maxTokens: 1000,
+  },
 });
 
 // Anthropic with custom settings
-const anthropicModel = new ChatAnthropic({
-  temperature: 0.5,
-  model: 'claude-3-sonnet-20240229',
+const agent = new AIAgent({
+  model: {
+    provider: 'anthropic',
+    model: 'claude-3-sonnet-20240229',
+    temperature: 0.5,
+    maxTokens: 1000,
+  },
+});
   maxTokens: 2000,
 });
 ```

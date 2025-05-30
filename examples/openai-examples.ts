@@ -2,25 +2,21 @@
  * Example: Using the AI Agent with OpenAI
  *
  * This example shows how to use the AI Agent library with OpenAI's GPT models.
- * You'll need to install @langchain/openai and set your OpenAI API key.
+ * You'll need to set your OpenAI API key as an environment variable.
  *
- * npm install @langchain/openai
  * export OPENAI_API_KEY="your-api-key-here"
  */
 
 import { AIAgent } from '../src';
-import { ChatOpenAI } from '@langchain/openai';
 
 async function exampleWithOpenAI() {
-  // Create OpenAI model
-  const model = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-    temperature: 0.7,
-  });
-
-  // Create AI Agent with simple configuration
+  // Create AI Agent with OpenAI model configuration
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     systemMessage: 'You are a helpful coding assistant.',
   });
 
@@ -49,23 +45,19 @@ async function exampleWithOpenAI() {
 }
 
 async function exampleWithMemory() {
-  const model = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-  });
-
-  // Create agent with memory
+  // Create agent with memory using the new constructor pattern
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     memory: {
       type: 'buffer-window',
       contextWindowLength: 10,
+      sessionId: 'user-123', // Optional session ID
     },
-  });
-
-  // Setup memory for the agent
-  await agent.setupMemory('user-123', {
-    type: 'buffer-window',
-    contextWindowLength: 10,
+    systemMessage: 'You are a helpful assistant with memory.',
   });
 
   try {
@@ -76,20 +68,25 @@ async function exampleWithMemory() {
     // Second conversation - should remember the name
     const response2 = await agent.invoke('What is my name?');
     console.log('Response 2:', response2.output);
+
+    // View conversation history
+    const history = await agent.getConversationHistory();
+    console.log('Conversation history length:', history.length);
   } catch (error) {
     console.error('Error:', error);
   }
 }
 
 async function exampleWithMultipleTools() {
-  const model = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     systemMessage: 'You are a helpful assistant with access to various tools.',
     maxIterations: 10,
+    returnIntermediateSteps: true, // Show intermediate steps
   });
 
   // Add multiple tools
@@ -125,21 +122,54 @@ async function exampleWithMultipleTools() {
       'What is the weather like in San Francisco? Also save a note that I asked about the weather.',
     );
     console.log('Response:', response.output);
+    
+    if (response.intermediateSteps) {
+      console.log('\\nIntermediate steps:');
+      response.intermediateSteps.forEach((step, i) => {
+        console.log(`Step ${i + 1}:`, step);
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+async function exampleWithCustomAPIKey() {
+  // Example showing how to provide API key directly in model config
+  const agent = new AIAgent({
+    model: {
+      provider: 'openai',
+      model: 'gpt-3.5-turbo',
+      temperature: 0.5,
+      apiKey: 'your-api-key-here', // You can provide API key directly
+    },
+    systemMessage: 'You are a helpful assistant.',
+  });
+
+  try {
+    const response = await agent.invoke('Hello! How are you?');
+    console.log('Response:', response.output);
   } catch (error) {
     console.error('Error:', error);
   }
 }
 
 // Export examples for use
-export { exampleWithOpenAI, exampleWithMemory, exampleWithMultipleTools };
+export { 
+  exampleWithOpenAI, 
+  exampleWithMemory, 
+  exampleWithMultipleTools,
+  exampleWithCustomAPIKey 
+};
 
 // Run examples if this file is executed directly
 if (require.main === module) {
-  console.log('Running AI Agent examples...');
+  console.log('Running AI Agent OpenAI examples...');
   console.log('Note: You need to set OPENAI_API_KEY environment variable');
 
   // Uncomment to run specific examples:
   // exampleWithOpenAI();
-  exampleWithMemory();
+  // exampleWithMemory();
   // exampleWithMultipleTools();
+  // exampleWithCustomAPIKey();
 }

@@ -1,19 +1,15 @@
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { DynamicTool } from '@langchain/core/tools';
 import { AIAgent } from '../src';
 
 // Example 1: Simple AI Agent with OpenAI
 async function simpleExample() {
   console.log('=== Simple AI Agent Example ===');
 
-  const model = new ChatOpenAI({
-    temperature: 0.7,
-    model: 'gpt-4o-mini',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     systemMessage:
       'You are a helpful assistant that answers questions concisely.',
   });
@@ -26,13 +22,12 @@ async function simpleExample() {
 async function memoryExample() {
   console.log('\\n=== AI Agent with Memory Example ===');
 
-  const model = new ChatOpenAI({
-    temperature: 0.7,
-    model: 'gpt-4o-mini',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     memory: {
       type: 'buffer-window',
       contextWindowLength: 5, // Keep last 5 message pairs in memory
@@ -62,13 +57,12 @@ async function memoryExample() {
 async function toolsExample() {
   console.log('\\n=== AI Agent with Tools Example ===');
 
-  const model = new ChatOpenAI({
-    temperature: 0.7,
-    model: 'gpt-4o-mini',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+    },
     systemMessage:
       'You are a helpful assistant with access to calculation and weather tools.',
     maxIterations: 5,
@@ -121,13 +115,12 @@ async function toolsExample() {
 async function anthropicExample() {
   console.log('\\n=== AI Agent with Anthropic Claude ===');
 
-  const model = new ChatAnthropic({
-    temperature: 0.7,
-    model: 'claude-3-sonnet-20240229',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'anthropic',
+      model: 'claude-3-sonnet-20240229',
+      temperature: 0.7,
+    },
     systemMessage:
       'You are Claude, an AI assistant created by Anthropic. Be helpful, harmless, and honest.',
     memory: {
@@ -146,13 +139,12 @@ async function anthropicExample() {
 async function advancedExample() {
   console.log('\\n=== Advanced AI Agent Configuration ===');
 
-  const model = new ChatOpenAI({
-    temperature: 0.3,
-    model: 'gpt-4',
-  });
-
   const agent = new AIAgent({
-    model,
+    model: {
+      provider: 'openai',
+      model: 'gpt-4',
+      temperature: 0.3,
+    },
     systemMessage: `You are an expert data analyst. You help users understand data and provide insights.
                    When using tools, explain what you're doing and why.`,
     maxIterations: 10,
