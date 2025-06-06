@@ -8,6 +8,7 @@
  */
 
 import { AIAgent } from '../src';
+import { z } from 'zod';
 
 async function exampleWithClaude() {
   // Create AI Agent with Anthropic model configuration
@@ -27,7 +28,10 @@ async function exampleWithClaude() {
     {
       name: 'read_file',
       description: 'Read the contents of a file',
-      func: async (filename: string) => {
+      schema: z.object({
+        filename: z.string().describe('The name of the file to read'),
+      }),
+      func: async ({ filename }: { filename: string }) => {
         // Mock file reading
         return `Contents of ${filename}: [File content here]`;
       },
@@ -35,8 +39,11 @@ async function exampleWithClaude() {
     {
       name: 'write_file',
       description: 'Write content to a file',
-      func: async (args: string) => {
-        const { filename, content } = JSON.parse(args);
+      schema: z.object({
+        filename: z.string().describe('The name of the file to write to'),
+        content: z.string().describe('The content to write to the file'),
+      }),
+      func: async ({ filename, content }: { filename: string; content: string }) => {
         // Mock file writing
         console.log(`Writing to ${filename}: ${content}`);
         return `Successfully wrote to ${filename}`;

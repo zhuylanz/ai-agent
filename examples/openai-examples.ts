@@ -8,6 +8,7 @@
  */
 
 import { AIAgent } from '../src';
+import { z } from 'zod';
 
 async function exampleWithOpenAI() {
   // Create AI Agent with OpenAI model configuration
@@ -24,7 +25,12 @@ async function exampleWithOpenAI() {
   agent.addTool({
     name: 'calculate',
     description: 'Calculate mathematical expressions',
-    func: (expression: string) => {
+    schema: z.object({
+      expression: z
+        .string()
+        .describe('The mathematical expression to calculate'),
+    }),
+    func: ({ expression }: { expression: string }) => {
       try {
         // Note: In production, use a proper math parser for security
         const result = eval(expression);
@@ -94,7 +100,10 @@ async function exampleWithMultipleTools() {
     {
       name: 'get_weather',
       description: 'Get current weather for a city',
-      func: async (city: string) => {
+      schema: z.object({
+        city: z.string().describe('The city to get weather for'),
+      }),
+      func: async ({ city }: { city: string }) => {
         // Mock weather API call
         return `The weather in ${city} is sunny with 72°F`;
       },
@@ -102,7 +111,10 @@ async function exampleWithMultipleTools() {
     {
       name: 'search_web',
       description: 'Search the web for information',
-      func: async (query: string) => {
+      schema: z.object({
+        query: z.string().describe('The search query'),
+      }),
+      func: async ({ query }: { query: string }) => {
         // Mock web search
         return `Search results for "${query}": [Mock search results]`;
       },
@@ -110,7 +122,10 @@ async function exampleWithMultipleTools() {
     {
       name: 'save_note',
       description: 'Save a note for later',
-      func: async (note: string) => {
+      schema: z.object({
+        note: z.string().describe('The note content to save'),
+      }),
+      func: async ({ note }: { note: string }) => {
         console.log('Saving note:', note);
         return `Note saved: ${note}`;
       },
