@@ -1,5 +1,26 @@
 import { z } from 'zod';
 
+// LangChain types for intermediate steps
+export interface AgentAction {
+  /** Name of the tool to execute */
+  tool: string;
+  /** Input parameters for the tool */
+  toolInput: any;
+  /** Tool call ID for tracking */
+  toolCallId: string;
+  /** Log message for the action */
+  log: string;
+  /** Array of messages in the conversation */
+  messageLog: any[];
+}
+
+export interface AgentStep {
+  /** The action taken by the agent */
+  action: AgentAction;
+  /** The observation/result from executing the action */
+  observation: string;
+}
+
 export interface AIAgentOptions {
   /** The chat model to use for the agent */
   model: ModelConfig;
@@ -53,7 +74,7 @@ export interface AIAgentResponse {
   output: string;
 
   /** Intermediate steps if returnIntermediateSteps is true */
-  intermediateSteps?: any[];
+  intermediateSteps?: AgentStep[];
 
   /** Error if execution failed */
   error?: string;
