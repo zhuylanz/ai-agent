@@ -9,19 +9,12 @@
  */
 
 import { AIAgent, KnowledgeBaseConfig } from '../src';
-import { OpenAIEmbeddings } from '@langchain/openai';
 
 async function demonstrateKnowledgeBase() {
   console.log('🤖 AI Agent Knowledge Base Demo');
   console.log('==================================\n');
 
-  // Configure embeddings
-  const embeddings = new OpenAIEmbeddings({
-    apiKey: process.env.OPENAI_API_KEY,
-    modelName: 'text-embedding-3-small',
-  });
-
-  // Configure knowledge bases
+  // Configure knowledge bases with simple embeddings configuration
   const knowledgeBases: KnowledgeBaseConfig[] = [
     {
       name: 'company_kb',
@@ -35,7 +28,11 @@ async function demonstrateKnowledgeBase() {
         password: process.env.POSTGRES_PASSWORD || 'demo_password',
         tableName: 'company_kb',
       },
-      embeddings,
+      embeddings: {
+        provider: 'openai',
+        model: 'text-embedding-3-small',
+        apiKey: process.env.OPENAI_API_KEY,
+      },
       topK: 5,
       includeMetadata: true,
     },
@@ -51,7 +48,11 @@ async function demonstrateKnowledgeBase() {
         password: process.env.POSTGRES_PASSWORD || 'demo_password',
         tableName: 'technical_kb',
       },
-      embeddings,
+      embeddings: {
+        provider: 'openai',
+        model: 'text-embedding-3-small',
+        apiKey: process.env.OPENAI_API_KEY,
+      },
       topK: 3,
       includeMetadata: true,
     },

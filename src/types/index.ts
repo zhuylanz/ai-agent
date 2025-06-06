@@ -55,6 +55,12 @@ export interface ModelConfig {
   apiKey?: string;
 }
 
+export interface EmbeddingsConfig {
+  provider: 'openai' | 'cohere' | 'huggingface';
+  model: string;
+  apiKey?: string;
+}
+
 export interface MemoryConfig {
   /** Type of memory to use */
   type?: 'buffer-window' | 'summary' | 'postgres';
@@ -121,16 +127,14 @@ export interface KnowledgeBaseConfig {
   description: string;
   /** PostgreSQL configuration for the vector store */
   pgConfig: PGVectorConfig;
-  /** Embeddings to use for the vector search */
-  embeddings: any; // Embeddings type from @langchain/core/embeddings
+  /** Embeddings configuration for the vector search */
+  embeddings: EmbeddingsConfig;
   /** Number of documents to retrieve by default */
   topK?: number;
   /** Whether to include metadata in search results */
   includeMetadata?: boolean;
   /** Optional metadata filter to apply to searches */
   metadataFilter?: Record<string, any>;
-  /** Collection name for the vector store */
-  collectionName?: string;
 }
 
 export interface PGVectorConfig {

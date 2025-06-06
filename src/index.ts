@@ -17,6 +17,7 @@ import type {
 import { ToolManager } from './tools/index';
 import { MemoryManager } from './memory/memory-manager';
 import { ModelFactory } from './models/model-factory';
+import { EmbeddingsFactory } from './models/embeddings-factory';
 import { createVectorSearchTool } from './tools/vector-tools';
 
 export class AIAgent {
@@ -52,7 +53,9 @@ export class AIAgent {
 
     // Auto-create vector search tools from knowledge bases
     if (options.knowledgeBases) {
-      this.addKnowledgeBaseTools(options.knowledgeBases);
+      this.addKnowledgeBaseTools(options.knowledgeBases).catch(error => {
+        console.error('Failed to initialize knowledge base tools:', error);
+      });
     }
 
     if (options.memory) {
@@ -122,14 +125,17 @@ export class AIAgent {
   /**
    * Create and add vector search tools from knowledge base configurations
    */
-  private addKnowledgeBaseTools(knowledgeBases: KnowledgeBaseConfig[]): void {
+  private async addKnowledgeBaseTools(knowledgeBases: KnowledgeBaseConfig[]): Promise<void> {
     for (const kb of knowledgeBases) {
       try {
+        // Create embeddings instance from config
+        const embeddings = await EmbeddingsFactory.createEmbeddings(kb.embeddings);
+        
         const vectorSearchTool = createVectorSearchTool({
           toolName: `search_${kb.name}`,
           toolDescription: kb.description,
           pgConfig: kb.pgConfig,
-          embeddings: kb.embeddings,
+          embeddings: embeddings,
           topK: kb.topK || 4,
           includeMetadata: kb.includeMetadata !== false,
           metadataFilter: kb.metadataFilter,
@@ -346,3 +352,4 @@ export * from './types/index';
 export { MemoryManager } from './memory/index';
 export { ToolManager } from './tools/index';
 export { ModelFactory } from './models/model-factory';
+export { EmbeddingsFactory } from './models/embeddings-factory';
