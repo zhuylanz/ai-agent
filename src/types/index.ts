@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface AIAgentOptions {
   /** The chat model to use for the agent */
   model: ModelConfig;
@@ -19,6 +21,9 @@ export interface AIAgentOptions {
 
   /** Array of tools available to the agent */
   tools?: ToolOptions[];
+
+  /** Knowledge bases configuration for automatic vector search tools */
+  knowledgeBases?: KnowledgeBaseConfig[];
 }
 
 export interface ModelConfig {
@@ -84,6 +89,51 @@ export interface ToolOptions {
   /** Tool function */
   func: (...args: any[]) => Promise<string> | string;
 
-  /** Tool schema for parameters */
-  schema?: any;
+  /** Tool schema for parameters - Zod schema defining the input structure */
+  schema?: z.ZodSchema;
+}
+
+export interface KnowledgeBaseConfig {
+  /** Name of the knowledge base (used as tool name) */
+  name: string;
+  /** Description to help the AI Agent understand when to query this knowledge base */
+  description: string;
+  /** PostgreSQL configuration for the vector store */
+  pgConfig: PGVectorConfig;
+  /** Embeddings to use for the vector search */
+  embeddings: any; // Embeddings type from @langchain/core/embeddings
+  /** Number of documents to retrieve by default */
+  topK?: number;
+  /** Whether to include metadata in search results */
+  includeMetadata?: boolean;
+  /** Optional metadata filter to apply to searches */
+  metadataFilter?: Record<string, any>;
+  /** Collection name for the vector store */
+  collectionName?: string;
+}
+
+export interface PGVectorConfig {
+  /** Postgres host */
+  host: string;
+  /** Postgres port */
+  port: number;
+  /** Database name */
+  database: string;
+  /** Username for Postgres connection */
+  user: string;
+  /** Password for Postgres connection */
+  password: string;
+  /** Table name for storing vectors */
+  tableName?: string;
+  /** Collection name for organizing vectors */
+  collectionName?: string;
+  /** Collection table name */
+  collectionTableName?: string;
+  /** Custom column configuration */
+  columns?: {
+    idColumnName?: string;
+    vectorColumnName?: string;
+    contentColumnName?: string;
+    metadataColumnName?: string;
+  };
 }

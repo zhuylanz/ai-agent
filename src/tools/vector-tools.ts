@@ -6,6 +6,7 @@ import type { Document } from '@langchain/core/documents';
 import type { Embeddings } from '@langchain/core/embeddings';
 import type { VectorStore } from '@langchain/core/vectorstores';
 import type pg from 'pg';
+import { z } from 'zod';
 import { ToolOptions } from '../types';
 
 // Configuration interfaces for PGVector
@@ -243,40 +244,38 @@ export function createVectorSearchTool(
     ...searchConfig
   } = config;
 
-  const schema: any = {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'The search query to find similar documents',
-      },
-    },
-    required: ['query'],
-  };
+  const baseSchema = z.object({
+    query: z.string().describe('The search query to find similar documents'),
+  });
 
+  let schema: z.ZodSchema;
   if (allowDynamicTopK) {
-    schema.properties.topK = {
-      type: 'number',
-      description:
-        'Number of documents to retrieve (optional, defaults to configured value)',
-      minimum: 1,
-      maximum: 50,
-    };
+    schema = baseSchema.extend({
+      topK: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(searchConfig.topK || 4)
+        .describe(
+          'Number of documents to retrieve (defaults to configured value)',
+        ),
+    });
+  } else {
+    schema = baseSchema;
   }
 
   return {
     name: toolName,
     description: toolDescription,
     schema,
-    func: async (args: { query: string; topK?: number }) => {
-      const { query, topK = searchConfig.topK || 4 } = args;
-      const actualTopK = allowDynamicTopK ? topK : searchConfig.topK || 4;
+    func: async (args: z.infer<typeof schema>) => {
+      const { query } = args;
+      const topK = allowDynamicTopK
+        ? (args as any).topK || searchConfig.topK || 4
+        : searchConfig.topK || 4;
 
-      const documents = await performVectorSearch(
-        query,
-        searchConfig,
-        actualTopK,
-      );
+      const documents = await performVectorSearch(query, searchConfig, topK);
 
       return formatSearchResults(
         documents,

@@ -12,10 +12,12 @@ import type {
   AIAgentResponse,
   ToolOptions,
   MemoryConfig,
+  KnowledgeBaseConfig,
 } from './types/index';
 import { ToolManager } from './tools/index';
 import { MemoryManager } from './memory/memory-manager';
 import { ModelFactory } from './models/model-factory';
+import { createVectorSearchTool } from './tools/vector-tools';
 
 export class AIAgent {
   private model: BaseChatModel;
@@ -34,7 +36,7 @@ export class AIAgent {
     this.model = null as any;
     this.systemMessage = options.systemMessage || 'You are a helpful assistant';
     this.maxIterations = options.maxIterations || 10;
-    this.returnIntermediateSteps = options.returnIntermediateSteps || false;
+    this.returnIntermediateSteps = options.returnIntermediateSteps || true;
     this.passthroughBinaryImages = options.passthroughBinaryImages || false;
     this.toolManager = new ToolManager();
 
@@ -46,6 +48,11 @@ export class AIAgent {
       } else {
         throw new Error('Tools must be an array of ToolOptions');
       }
+    }
+
+    // Auto-create vector search tools from knowledge bases
+    if (options.knowledgeBases) {
+      this.addKnowledgeBaseTools(options.knowledgeBases);
     }
 
     if (options.memory) {
@@ -110,6 +117,39 @@ export class AIAgent {
       options,
       this.model,
     );
+  }
+
+  /**
+   * Create and add vector search tools from knowledge base configurations
+   */
+  private addKnowledgeBaseTools(knowledgeBases: KnowledgeBaseConfig[]): void {
+    for (const kb of knowledgeBases) {
+      try {
+        const vectorSearchTool = createVectorSearchTool({
+          toolName: `search_${kb.name}`,
+          toolDescription: kb.description,
+          pgConfig: kb.pgConfig,
+          embeddings: kb.embeddings,
+          topK: kb.topK || 4,
+          includeMetadata: kb.includeMetadata !== false,
+          metadataFilter: kb.metadataFilter,
+          outputFormat: 'simple',
+          allowDynamicTopK: true,
+        });
+
+        this.toolManager.addTool(vectorSearchTool);
+      } catch (error) {
+        console.error(
+          `Failed to create vector search tool for knowledge base '${kb.name}':`,
+          error,
+        );
+        throw new Error(
+          `Failed to create vector search tool for knowledge base '${
+            kb.name
+          }': ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
   }
 
   /**
@@ -251,7 +291,7 @@ export class AIAgent {
       return {
         output: cleanedResponse.output || '',
         intermediateSteps: this.returnIntermediateSteps
-          ? cleanedResponse.intermediate_steps
+          ? cleanedResponse.intermediateSteps
           : undefined,
       };
     } catch (error) {
