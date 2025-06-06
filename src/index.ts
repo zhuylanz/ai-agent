@@ -32,6 +32,7 @@ export class AIAgent {
   private pendingMemoryConfig?: MemoryConfig;
   private memorySetupPromise?: Promise<void>;
   private modelInitPromise: Promise<void>;
+  private knowledgeBaseInitPromise?: Promise<void>;
 
   constructor(options: AIAgentOptions) {
     this.model = null as any;
@@ -53,8 +54,11 @@ export class AIAgent {
 
     // Auto-create vector search tools from knowledge bases
     if (options.knowledgeBases) {
-      this.addKnowledgeBaseTools(options.knowledgeBases).catch(error => {
+      this.knowledgeBaseInitPromise = this.addKnowledgeBaseTools(
+        options.knowledgeBases,
+      ).catch((error) => {
         console.error('Failed to initialize knowledge base tools:', error);
+        throw error;
       });
     }
 
@@ -108,6 +112,16 @@ export class AIAgent {
   }
 
   /**
+   * Ensure knowledge base tools are initialized before operations
+   */
+  private async ensureKnowledgeBaseReady(): Promise<void> {
+    if (this.knowledgeBaseInitPromise) {
+      await this.knowledgeBaseInitPromise;
+      this.knowledgeBaseInitPromise = undefined;
+    }
+  }
+
+  /**
    * Set up memory for the agent with specific options
    */
   async setupMemory(options?: MemoryConfig): Promise<void> {
@@ -125,12 +139,16 @@ export class AIAgent {
   /**
    * Create and add vector search tools from knowledge base configurations
    */
-  private async addKnowledgeBaseTools(knowledgeBases: KnowledgeBaseConfig[]): Promise<void> {
+  private async addKnowledgeBaseTools(
+    knowledgeBases: KnowledgeBaseConfig[],
+  ): Promise<void> {
     for (const kb of knowledgeBases) {
       try {
         // Create embeddings instance from config
-        const embeddings = await EmbeddingsFactory.createEmbeddings(kb.embeddings);
-        
+        const embeddings = await EmbeddingsFactory.createEmbeddings(
+          kb.embeddings,
+        );
+
         const vectorSearchTool = createVectorSearchTool({
           toolName: `search_${kb.name}`,
           toolDescription: kb.description,
@@ -183,6 +201,14 @@ export class AIAgent {
    * Get all available tools
    */
   getTools(): Tool[] {
+    return this.toolManager.getTools();
+  }
+
+  /**
+   * Get all available tools (async version that waits for initialization)
+   */
+  async getToolsAsync(): Promise<Tool[]> {
+    await this.ensureKnowledgeBaseReady();
     return this.toolManager.getTools();
   }
 
@@ -253,6 +279,7 @@ export class AIAgent {
     try {
       await this.ensureModelReady();
       await this.ensureMemoryReady();
+      await this.ensureKnowledgeBaseReady();
 
       const messages = this.prepareMessages();
       const prompt = this.preparePrompt(messages);

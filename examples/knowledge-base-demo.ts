@@ -85,11 +85,13 @@ Do not provide answers from your general knowledge without first searching the k
     returnIntermediateSteps: true,
   });
 
-  console.log('✅ Agent created with knowledge base search tools!\n');
+  console.log(
+    '✅ Agent created! Initializing knowledge base search tools...\n',
+  );
 
-  // Display available tools
+  // Display available tools (wait for initialization)
   console.log('🔧 Available tools:');
-  const tools = agent.getTools();
+  const tools = await agent.getToolsAsync();
   tools.forEach((tool, index) => {
     console.log(`  ${index + 1}. ${tool.name} - ${tool.description}`);
   });
