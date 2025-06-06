@@ -256,9 +256,9 @@ export function createVectorSearchTool(
         .int()
         .min(1)
         .max(50)
-        .default(searchConfig.topK || 4)
+        .nullable()
         .describe(
-          'Number of documents to retrieve (defaults to configured value)',
+          `Number of documents to retrieve (1-50). Pass null to use the default value (${searchConfig.topK || 4})`,
         ),
     });
   } else {
@@ -272,7 +272,7 @@ export function createVectorSearchTool(
     func: async (args: z.infer<typeof schema>) => {
       const { query } = args;
       const topK = allowDynamicTopK
-        ? (args as any).topK || searchConfig.topK || 4
+        ? (args as any).topK ?? searchConfig.topK ?? 4
         : searchConfig.topK || 4;
 
       const documents = await performVectorSearch(query, searchConfig, topK);
