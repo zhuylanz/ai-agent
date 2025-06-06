@@ -122,9 +122,9 @@ async function exampleWithMultipleTools() {
       'What is the weather like in San Francisco? Also save a note that I asked about the weather.',
     );
     console.log('Response:', response.output);
-    
+
     if (response.intermediateSteps) {
-      console.log('\\nIntermediate steps:');
+      console.log('Intermediate steps:');
       response.intermediateSteps.forEach((step, i) => {
         console.log(`Step ${i + 1}:`, step);
       });
@@ -155,21 +155,20 @@ async function exampleWithCustomAPIKey() {
 }
 
 // Export examples for use
-export { 
-  exampleWithOpenAI, 
-  exampleWithMemory, 
+export {
+  exampleWithOpenAI,
+  exampleWithMemory,
   exampleWithMultipleTools,
-  exampleWithCustomAPIKey 
+  exampleWithCustomAPIKey,
 };
 
 // Run examples if this file is executed directly
 if (require.main === module) {
   console.log('Running AI Agent OpenAI examples...');
-  console.log('Note: You need to set OPENAI_API_KEY environment variable');
 
   // Uncomment to run specific examples:
   // exampleWithOpenAI();
   // exampleWithMemory();
-  // exampleWithMultipleTools();
+  exampleWithMultipleTools();
   // exampleWithCustomAPIKey();
 }
