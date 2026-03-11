@@ -1,6 +1,6 @@
 {
   "name": "@lapage/ai-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standalone AI Agent library built on LangChain with MCP tool calling, memory, and vector knowledge base support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
