@@ -13,12 +13,14 @@ import type {
   ToolOptions,
   MemoryConfig,
   KnowledgeBaseConfig,
+  MCPServerConfig,
 } from './types/index';
 import { ToolManager } from './tools/index';
 import { MemoryManager } from './memory/memory-manager';
 import { ModelFactory } from './models/model-factory';
 import { EmbeddingsFactory } from './models/embeddings-factory';
 import { createVectorSearchTool } from './tools/vector-tools';
+import { getMcpServerTools } from './tools/mcp-client';
 
 export class AIAgent {
   private model: BaseChatModel;
@@ -33,6 +35,7 @@ export class AIAgent {
   private memorySetupPromise?: Promise<void>;
   private modelInitPromise: Promise<void>;
   private knowledgeBaseInitPromise?: Promise<void>;
+  private mcpServersInitPromise?: Promise<void>;
 
   constructor(options: AIAgentOptions) {
     this.model = null as any;
@@ -58,6 +61,16 @@ export class AIAgent {
         options.knowledgeBases,
       ).catch((error) => {
         console.error('Failed to initialize knowledge base tools:', error);
+        throw error;
+      });
+    }
+
+    // Auto-register tools from MCP servers
+    if (options.mcpServers) {
+      this.mcpServersInitPromise = this.addMcpServerTools(
+        options.mcpServers,
+      ).catch((error) => {
+        console.error('Failed to initialize MCP server tools:', error);
         throw error;
       });
     }
@@ -122,6 +135,16 @@ export class AIAgent {
   }
 
   /**
+   * Ensure MCP server tools are initialized before operations
+   */
+  private async ensureMcpServersReady(): Promise<void> {
+    if (this.mcpServersInitPromise) {
+      await this.mcpServersInitPromise;
+      this.mcpServersInitPromise = undefined;
+    }
+  }
+
+  /**
    * Set up memory for the agent with specific options
    */
   async setupMemory(options?: MemoryConfig): Promise<void> {
@@ -134,6 +157,30 @@ export class AIAgent {
       options,
       this.model,
     );
+  }
+
+  /**
+   * Connect to MCP servers and register all their tools with the agent.
+   */
+  private async addMcpServerTools(mcpServers: MCPServerConfig[]): Promise<void> {
+    for (const serverConfig of mcpServers) {
+      try {
+        const tools = await getMcpServerTools(serverConfig);
+        for (const tool of tools) {
+          this.toolManager.addLangChainTool(tool);
+        }
+      } catch (error) {
+        console.error(
+          `Failed to connect to MCP server '${serverConfig.url}':`,
+          error,
+        );
+        throw new Error(
+          `Failed to connect to MCP server '${serverConfig.url}': ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
   }
 
   /**
@@ -150,7 +197,7 @@ export class AIAgent {
         );
 
         const vectorSearchTool = createVectorSearchTool({
-          toolName: `search_${kb.name}`,
+          toolName: `query_kb_${kb.name}`,
           toolDescription: kb.description,
           pgConfig: kb.pgConfig,
           embeddings: embeddings,
@@ -209,6 +256,7 @@ export class AIAgent {
    */
   async getToolsAsync(): Promise<Tool[]> {
     await this.ensureKnowledgeBaseReady();
+    await this.ensureMcpServersReady();
     return this.toolManager.getTools();
   }
 
@@ -280,6 +328,7 @@ export class AIAgent {
       await this.ensureModelReady();
       await this.ensureMemoryReady();
       await this.ensureKnowledgeBaseReady();
+      await this.ensureMcpServersReady();
 
       const messages = this.prepareMessages();
       const prompt = this.preparePrompt(messages);
@@ -380,3 +429,5 @@ export { MemoryManager } from './memory/index';
 export { ToolManager } from './tools/index';
 export { ModelFactory } from './models/model-factory';
 export { EmbeddingsFactory } from './models/embeddings-factory';
+export { getMcpServerTools } from './tools/mcp-client';
+export { convertJsonSchemaToZod } from './tools/json-schema-to-zod';

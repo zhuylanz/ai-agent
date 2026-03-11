@@ -149,6 +149,52 @@ async function exampleWithMultipleTools() {
   }
 }
 
+async function exampleWithMcpServer() {
+  // Connect the agent to an MCP server so it can automatically discover and call
+  // any tools the server exposes – no manual tool registration needed.
+  const agent = new AIAgent({
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.2,
+    },
+    systemMessage:
+      'You are a helpful assistant with access to external data via MCP tools.',
+    mcpServers: [
+      {
+        // URL of your MCP server (http/https)
+        url:
+          process.env.MCP_SERVER_URL ?? 'https://my-mcp-server.example.com/mcp',
+        // transport: 'httpStreamable', // default – use 'sse' for legacy servers
+        // Optional auth header
+        headers: process.env.MCP_API_TOKEN
+          ? { Authorization: `Bearer ${process.env.MCP_API_TOKEN}` }
+          : undefined,
+        // toolMode: 'all',     // expose every tool (default)
+        // toolMode: 'selected', includeTools: ['search', 'lookup'],
+        // toolMode: 'except',   excludeTools: ['delete_record'],
+        timeout: 30_000,
+      },
+    ],
+  });
+
+  try {
+    // Tools from the MCP server are fetched and registered on first use.
+    const tools = await agent.getToolsAsync();
+    console.log(
+      'MCP tools available:',
+      tools.map((t) => t.name),
+    );
+
+    const response = await agent.invoke(
+      'What tools do you have and what can they do?',
+    );
+    console.log('Response:', response.output);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
 async function exampleWithCustomAPIKey() {
   // Example showing how to provide API key directly in model config
   const agent = new AIAgent({
@@ -174,6 +220,7 @@ export {
   exampleWithOpenAI,
   exampleWithMemory,
   exampleWithMultipleTools,
+  exampleWithMcpServer,
   exampleWithCustomAPIKey,
 };
 
@@ -182,8 +229,9 @@ if (require.main === module) {
   console.log('Running AI Agent OpenAI examples...');
 
   // Uncomment to run specific examples:
-  // exampleWithOpenAI();
-  // exampleWithMemory();
+  exampleWithOpenAI();
+  exampleWithMemory();
   exampleWithMultipleTools();
-  // exampleWithCustomAPIKey();
+  exampleWithCustomAPIKey();
+  // exampleWithMcpServer(); // Requires a running MCP server and valid URL
 }

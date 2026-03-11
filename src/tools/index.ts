@@ -1,6 +1,8 @@
-import { DynamicTool, tool } from '@langchain/core/tools';
+import { DynamicTool, DynamicStructuredTool, tool } from '@langchain/core/tools';
 import type { Tool } from '@langchain/core/tools';
+import { z } from 'zod';
 import type { ToolOptions } from '../types/index';
+import { convertJsonSchemaToZod } from './json-schema-to-zod';
 
 export class ToolManager {
   private tools: any[] = [];
@@ -10,8 +12,26 @@ export class ToolManager {
    */
   addTool(toolOptions: ToolOptions): void {
     if (toolOptions.schema) {
-      // Use the tool helper function for tools with schema
-      const langchainTool = tool(
+      // Resolve schema: accept both Zod schemas and JSONSchema7 objects
+      let resolvedSchema: z.ZodTypeAny;
+
+      if (toolOptions.schema instanceof z.ZodType) {
+        resolvedSchema = toolOptions.schema;
+      } else {
+        // Treat as JSONSchema7 — convert to Zod
+        const converted = convertJsonSchemaToZod(toolOptions.schema as any);
+        resolvedSchema =
+          converted instanceof z.ZodObject ? converted : z.object({ value: converted });
+      }
+
+      // Use DynamicStructuredTool for tools with a schema (cast to avoid deep type inference)
+      const schemaForTool = (
+        resolvedSchema instanceof z.ZodObject ? resolvedSchema : z.object({ value: resolvedSchema })
+      ) as z.ZodObject<any>;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const createTool = tool as (...args: any[]) => any;
+      const langchainTool = createTool(
         async (input: any) => {
           try {
             const result = await toolOptions.func(input);
@@ -25,7 +45,7 @@ export class ToolManager {
         {
           name: toolOptions.name,
           description: toolOptions.description,
-          schema: toolOptions.schema,
+          schema: schemaForTool,
         },
       );
       this.tools.push(langchainTool);
@@ -59,7 +79,8 @@ export class ToolManager {
   /**
    * Add an existing LangChain tool
    */
-  addLangChainTool(tool: Tool): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addLangChainTool(tool: any): void {
     this.tools.push(tool);
   }
 

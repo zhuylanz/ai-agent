@@ -14,7 +14,7 @@ export class ModelFactory {
             temperature,
             maxTokens,
             apiKey: apiKey || process.env.OPENAI_API_KEY,
-          });
+          }) as unknown as BaseChatModel;
         } catch (error) {
           throw new Error(
             'OpenAI provider requires @langchain/openai to be installed. Run: npm install @langchain/openai',
@@ -30,7 +30,7 @@ export class ModelFactory {
             temperature,
             maxTokens,
             apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
-          });
+          }) as unknown as BaseChatModel;
         } catch (error) {
           throw new Error(
             'Anthropic provider requires @langchain/anthropic to be installed. Run: npm install @langchain/anthropic',

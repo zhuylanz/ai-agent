@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import type { JSONSchema7 } from 'json-schema';
+import type { z } from 'zod';
 
 // LangChain types for intermediate steps
 export interface AgentAction {
@@ -45,6 +46,9 @@ export interface AIAgentOptions {
 
   /** Knowledge bases configuration for automatic vector search tools */
   knowledgeBases?: KnowledgeBaseConfig[];
+
+  /** MCP server configurations for automatic tool registration */
+  mcpServers?: MCPServerConfig[];
 }
 
 export interface ModelConfig {
@@ -116,8 +120,38 @@ export interface ToolOptions {
   /** Tool function */
   func: (...args: any[]) => Promise<string> | string;
 
-  /** Tool schema for parameters - Zod schema defining the input structure */
-  schema?: z.ZodSchema;
+  /** Tool schema for parameters - Zod schema or JSON Schema 7 defining the input structure */
+  schema?: z.ZodSchema | JSONSchema7;
+}
+
+/**
+ * Configuration for connecting to an MCP (Model Context Protocol) server.
+ * The agent will automatically register all tools exposed by the server.
+ */
+export interface MCPServerConfig {
+  /** The endpoint URL of the MCP server */
+  url: string;
+
+  /** Transport protocol to use (defaults to 'httpStreamable') */
+  transport?: 'sse' | 'httpStreamable';
+
+  /** Optional HTTP headers for authentication (e.g. Bearer token) */
+  headers?: Record<string, string>;
+
+  /** Display name for this MCP client (used in SDK metadata) */
+  name?: string;
+
+  /** Tool call timeout in milliseconds (defaults to 60000) */
+  timeout?: number;
+
+  /** Which tools to expose from this server */
+  toolMode?: 'all' | 'selected' | 'except';
+
+  /** Tools to include when toolMode is 'selected' */
+  includeTools?: string[];
+
+  /** Tools to exclude when toolMode is 'except' */
+  excludeTools?: string[];
 }
 
 export interface KnowledgeBaseConfig {
