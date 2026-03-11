@@ -1,6 +1,6 @@
 {
   "name": "@lapage/ai-agent",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Standalone AI Agent library built on LangChain with MCP tool calling, memory, and vector knowledge base support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,6 +34,14 @@
   ],
   "author": "Huy Lan",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhuylanz/AIAgent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zhuylanz/AIAgent/issues"
+  },
+  "homepage": "https://github.com/zhuylanz/AIAgent#readme",
   "dependencies": {
     "@langchain/community": "^0.3.0",
     "@langchain/core": "^0.3.0",
