@@ -1,10 +1,10 @@
-# @zhuylanz/ai-agent
+# @lapage/ai-agent
 
 A standalone, TypeScript-first AI Agent library built on [LangChain](https://js.langchain.com/). Wire up OpenAI or Anthropic models, register tools (including live **MCP servers**), add persistent memory, and query **vector knowledge bases** — all from a single `AIAgent` class.
 
 ## Table of Contents
 
-- [@zhuylanz/ai-agent](#zhuylanzai-agent)
+- [@lapage/ai-agent](#lapageai-agent)
 	- [Table of Contents](#table-of-contents)
 	- [Features](#features)
 	- [Installation](#installation)
@@ -53,7 +53,7 @@ A standalone, TypeScript-first AI Agent library built on [LangChain](https://js.
 ## Installation
 
 ```bash
-npm install @zhuylanz/ai-agent
+npm install @lapage/ai-agent
 ```
 
 Install the LLM provider you need (at least one required):
@@ -68,7 +68,7 @@ npm install @langchain/anthropic   # for Anthropic / Claude models
 ## Quick Start
 
 ```ts
-import { AIAgent } from '@zhuylanz/ai-agent';
+import { AIAgent } from '@lapage/ai-agent';
 
 const agent = new AIAgent({
   model: {
@@ -333,7 +333,7 @@ Attach one or more vector knowledge bases. The agent automatically gets a search
 Requires PostgreSQL with the [pgvector](https://github.com/pgvector/pgvector) extension.
 
 ```ts
-import { AIAgent } from '@zhuylanz/ai-agent';
+import { AIAgent } from '@lapage/ai-agent';
 
 const agent = new AIAgent({
   model: { provider: 'openai', model: 'gpt-4o' },
