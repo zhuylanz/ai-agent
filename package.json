@@ -45,6 +45,7 @@
   "dependencies": {
     "@langchain/community": "^0.3.0",
     "@langchain/core": "^0.3.0",
+    "@lapage/ai-agent": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@types/json-schema": "^7.0.15",
     "langchain": "^0.3.0",
